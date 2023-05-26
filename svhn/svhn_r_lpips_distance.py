@@ -150,4 +150,4 @@ for idx, data in enumerate(sorted_dataset):
 
         with open('file', 'w') as sys.stdout:
             print('Data index: {idx}, time: {time}'.format(idx=idx + 1, time=(time.time() - start_time) / 60))
-torch.save(lpips_distance_matrix, 'cifar10-r-lpips-matrix.pt')
+torch.save(lpips_distance_matrix, 'svhn-r-lpips-matrix.pt')
