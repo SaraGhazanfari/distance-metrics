@@ -1,7 +1,6 @@
-# all imports
 import torch
 import time
-from torchvision.datasets import CIFAR10
+import torchvision
 from torchvision import transforms as T
 
 from torchvision import models as torchvision_models
@@ -67,6 +66,17 @@ class AlexNetFeatureModel(nn.Module):
         self.layer4 = nn.Sequential(self.model.features[8:10])
         self.layer5 = nn.Sequential(self.model.features[10:12])
 
+        self.chns = [64, 192, 384, 256, 256]
+        self.lin0 = NetLinLayer(self.chns[0])
+        self.lin1 = NetLinLayer(self.chns[1])
+        self.lin2 = NetLinLayer(self.chns[2])
+        self.lin3 = NetLinLayer(self.chns[3])
+        self.lin4 = NetLinLayer(self.chns[4])
+
+        self.only_conv_layers = [self.lin0, self.lin1, self.lin2, self.lin3, self.lin4]
+        [layer.eval() for layer in self.only_conv_layers]
+        self.load_state_dict(torch.load('../checkpoints/latest_net_linf.pth', map_location='cuda'), strict=False)
+
     def normalize_tensor(self, in_feat, eps=1e-10):
         norm_factor = torch.sqrt(torch.sum(in_feat ** 2, dim=1, keepdim=True))
         return in_feat / (norm_factor + eps).detach()
@@ -80,24 +90,14 @@ class AlexNetFeatureModel(nn.Module):
         x_layer4 = self.layer4(x_layer3)
         x_layer5 = self.layer5(x_layer4)
 
-        return (self.normalize_tensor(x_layer1), self.normalize_tensor(x_layer2),
-                self.normalize_tensor(x_layer3), self.normalize_tensor(x_layer4),
-                self.normalize_tensor(x_layer5))
+        return (self.lin0(self.normalize_tensor(x_layer1)), self.lin1(self.normalize_tensor(x_layer2)),
+                self.lin2(self.normalize_tensor(x_layer3)), self.lin3(self.normalize_tensor(x_layer4)),
+                self.lin4(self.normalize_tensor(x_layer5)))
 
 
 class LPIPS_Metric(nn.Module):
     def __init__(self):
         super().__init__()
-        self.chns = [64, 192, 384, 256, 256]
-        self.lin0 = NetLinLayer(self.chns[0])
-        self.lin1 = NetLinLayer(self.chns[1])
-        self.lin2 = NetLinLayer(self.chns[2])
-        self.lin3 = NetLinLayer(self.chns[3])
-        self.lin4 = NetLinLayer(self.chns[4])
-
-        self.only_conv_layers = [self.lin0, self.lin1, self.lin2, self.lin3, self.lin4]
-        [layer.eval() for layer in self.only_conv_layers]
-        self.load_state_dict(torch.load('checkpoints/latest_net_linf.pth', map_location='cuda'), strict=False)
 
     def spatial_average(self, arr):
         return arr.mean([2, 3], keepdim=True)
@@ -111,23 +111,28 @@ class LPIPS_Metric(nn.Module):
         for idx in range(5):
             img_1_and_img_2_diff[idx] = (img1[idx] - img2[idx]) ** 2
             img_1_and_img_2_diff[idx].detach()
-            res[idx] = self.spatial_average(self.only_conv_layers[idx](
-                img_1_and_img_2_diff[idx])).reshape(-1).detach()
+
+            res[idx] = self.spatial_average(img_1_and_img_2_diff[idx]).reshape(-1).detach()
+
+            # img_1_and_img_2_diff[idx] = (img1[idx]-img2[idx])**2
+            # img_1_and_img_2_diff[idx].detach()
+
+            # res[idx] = self.spatial_average(self.only_conv_layers[idx](
+            #     img_1_and_img_2_diff[idx])).reshape(-1).detach()
 
         res_sum = 0
         for i in range(len(res)):
             res_sum += res[i]
-        return torch.round(res_sum, decimals=4).detach()
+        return res_sum.detach()
 
 
-# Loading data
 transform = T.Compose(
     [
         T.ToTensor()
     ]
 )
 
-train_dataset = CIFAR10(root='./', train=True, transform=transform, download=True)
+train_dataset = torchvision.datasets.SVHN(root='./', split='train', transform=transform, download=True)
 sorted_dataset = sorted(train_dataset, key=lambda x: x[1])
 sorted_dataset = torch.stack([data for data, _ in sorted_dataset])
 
@@ -140,9 +145,9 @@ lpips_metric = LPIPS_Metric().eval()
 for idx, data in enumerate(sorted_dataset):
     lpips_distance_matrix[idx, idx:] = lpips_metric(alex_net(data.cuda()), alex_net(sorted_dataset[idx:].cuda())).cpu()
 
-    if idx % 1000 == 999:
+    if idx % 100 == 99:
         import sys
 
         with open('file', 'w') as sys.stdout:
             print('Data index: {idx}, time: {time}'.format(idx=idx + 1, time=(time.time() - start_time) / 60))
-torch.save(lpips_distance_matrix, 'svhn-r-lpips-matrix.pt')
+torch.save(lpips_distance_matrix, 'cifar10-r-lpips-matrix.pt')
