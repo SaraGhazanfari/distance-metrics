@@ -4,6 +4,7 @@ In this project, we try to calculate the distances in terms of Linf, L2, LPIPS a
 between train dataset of three datasets: CIFAR-10, SVHN, Tiny-Imagenet.
 
 After cloning the requirements should be installed. And calculations can be done as mentioned below:
+# CIFAR-10
 
 1- Calculate LPIPS for cifar10: python3 cifar10/cifar_lpips_distance.py
 
