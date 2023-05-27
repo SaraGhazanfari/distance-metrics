@@ -148,6 +148,6 @@ for idx, data in enumerate(sorted_dataset):
     if idx % 100 == 99:
         import sys
 
-        with open('file', 'w') as sys.stdout:
-            print('Data index: {idx}, time: {time}'.format(idx=idx + 1, time=(time.time() - start_time) / 60))
+        print('Data index: {idx}, time: {time}'.format(idx=idx + 1, time=(time.time() - start_time) / 60))
+        sys.stdout.flush()
 torch.save(lpips_distance_matrix, 'svhn-r-lpips-matrix.pt')
