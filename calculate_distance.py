@@ -27,17 +27,16 @@ if __name__ == '__main__':
 
     for idx, data in enumerate(selected_dataset):
         if PerceptualMetric.is_member(metric=args.metric_name):
-            distance_matrix[idx, idx:] = similarity_metric(embedding(data).cuda(),
-                                                           embedding(selected_dataset[idx:]).cuda()).cpu()
+            distance_matrix[idx, idx:] = similarity_metric(embedding(data.cuda()),
+                                                           embedding(selected_dataset[idx:].cuda())).cpu()
         else:
             p = LpMetric.get_p(metric=args.metric_name)
             distance_matrix[idx, idx:] = similarity_metric(data, selected_dataset[idx:], p=p,
                                                            dim=tuple(range(1, len(data.shape))))
 
         if idx % 1000 == 999:
-            with open('file', 'w') as sys.stdout:
-                print('Data index: {idx}, time: {time}'.format(idx=idx + 1, time=(time.time() - start_time) / 60))
-                sys.stdout.flush()
+            print('Data index: {idx}, time: {time}'.format(idx=idx + 1, time=(time.time() - start_time) / 60))
+            sys.stdout.flush()
 
     torch.save(distance_matrix, '{dataset_name}-{split}-{metric_name}-matrix.pt'.format(
         dataset_name=args.dataset, split=args.split, metric_name=args.metric_name))
