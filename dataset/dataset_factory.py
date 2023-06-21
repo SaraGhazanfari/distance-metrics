@@ -36,5 +36,5 @@ class DatasetFactory:
             raise ValueError
 
         sorted_dataset = sorted(selected_dataset, key=lambda x: x[1])
-        sorted_dataset = torch.stack([data for data, _ in sorted_dataset])
+        #sorted_dataset = torch.stack([data for data, _ in sorted_dataset])
         return sorted_dataset

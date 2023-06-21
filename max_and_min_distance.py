@@ -24,7 +24,7 @@ if __name__ == '__main__':
                         help='min or max')
     args = parser.parse_args()
 
-    distance_matrix = torch.load(args['path'])
+    distance_matrix = torch.load(args.data_path)
     selected_operator = torch.max
     if args.operator == 'min':
         distance_matrix = preprocess_distance_matrix(distance_matrix)

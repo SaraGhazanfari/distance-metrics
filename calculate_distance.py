@@ -25,7 +25,7 @@ if __name__ == '__main__':
     start_time = time.time()
     distance_matrix = torch.zeros((selected_dataset.shape[0], selected_dataset.shape[0]))
 
-    for idx, data in enumerate(selected_dataset):
+    for idx, (data, _) in enumerate(selected_dataset):
         if PerceptualMetric.is_member(metric=args.metric_name):
             distance_matrix[idx, idx:] = similarity_metric(embedding(data.cuda()),
                                                            embedding(selected_dataset[idx:].cuda())).cpu()
