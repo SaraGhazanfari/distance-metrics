@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     embedding, similarity_metric = get_metric(args.metric_name, args.model_path)
-    selected_dataset, data_loader = DatasetFactory(dataset_name=args.dataset, split=args.split,
+    selected_dataset, data_loader = DatasetFactory(dataset_name=args.dataset.lower(), split=args.split,
                                                    data_path=args.data_path,
                                                    batch_size=args.batch_size).get_dataset()
 
@@ -45,9 +45,8 @@ if __name__ == '__main__':
                                                                                                                   len(data.shape))))
             first_idx += 1
         second_idx += len(data_batch)
-        if first_idx % 1000 == 999:
-            print('Data index: {idx}, time: {time}'.format(idx=first_idx + 1, time=(time.time() - start_time) / 60))
-            sys.stdout.flush()
+        print('Data index: {idx}, time: {time}'.format(idx=second_idx + 1, time=(time.time() - start_time) / 60))
+        sys.stdout.flush()
 
     torch.save(distance_matrix, '{dataset_name}-{split}-{metric_name}-matrix.pt'.format(
         dataset_name=args.dataset, split=args.split, metric_name=args.metric_name))
